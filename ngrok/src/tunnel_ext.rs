@@ -228,10 +228,14 @@ fn tls_config(
                 let verify_upstream_tls = (p & TlsFlags::FLAG_verify_upstream_tls.bits()) != 0;
                 let mut config = crate::session::host_certs_tls_config()?;
                 if !verify_upstream_tls {
+                    #[cfg(feature = "aws_lc_rs")]
+                    let provider = rustls::crypto::aws_lc_rs::default_provider();
+                    
+                    #[cfg(all(feature = "ring", not(feature = "aws_lc_rs")))]
+                    let provider = rustls::crypto::ring::default_provider();
+                    
                     config.dangerous().set_certificate_verifier(Arc::new(
-                        danger::NoCertificateVerification::new(
-                            rustls::crypto::aws_lc_rs::default_provider(),
-                        ),
+                        danger::NoCertificateVerification::new(provider),
                     ));
                 }
 
